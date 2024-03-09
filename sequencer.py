@@ -1,4 +1,12 @@
 #!/usr/bin/python
+###########################################################################
+##
+## Sequencer project
+##
+## Auhor: Findlay Bewicke-Copley
+## Date: 09-03-2024
+##
+###########################################################################
 
 from gpiozero import LED, Button
 from signal import pause
