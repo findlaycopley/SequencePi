@@ -1,18 +1,26 @@
 #!/usr/bin/python
-###########################################################################
+######################################
 ##
 ## Sequencer project
 ##
 ## Auhor: Findlay Bewicke-Copley
 ## Date: 09-03-2024
 ##
-###########################################################################
+######################################
+
+######################################
+## Load dependencies
+######################################
 
 from gpiozero import LED, Button
 from signal import pause
 import os
 import time
 import subprocess
+
+######################################
+## Define GPIO pins with dictionary
+######################################
 
 pinDict = {
     "RecordLED":"9",
@@ -21,6 +29,11 @@ pinDict = {
     "PlayButton":"8"
     }
 
+######################################
+##
+## Class to hold everything together
+##
+######################################
 
 class Sequencer:
 
@@ -40,9 +53,16 @@ class Sequencer:
 
     def setupProcess(self):
         ## set recording attributes
+        ## These let the record button be a latch or hold button
         self.recordStartTime = 0
         self.recPressCount = 0
-        self.recordProcess = subprocess.Popen(["echo", "recordProcess", "created"])   
+        ## A process needs to exist to check if it has finished or not
+        ## Here this just outputs the string "recordProcess created"
+        self.recordProcess = subprocess.Popen(["echo", "recordProcess", "created"])
+        ## This will hopefully stop the play button glitching
+        self.playStartTime = 0
+        self.playPressTime = 0
+        ## Again this process needs to exist
         self.playProcess = subprocess.Popen(["echo", "playProcess", "created"])
         
     def allOff(self):
@@ -56,39 +76,49 @@ class Sequencer:
             led.on()
 
     def record(self):
+        ## add 1 to the self.recPressCount
         self.recPressCount += 1
         ## if already recording do nothing
         if self.recordProcess.poll() is None:
             pass
+        ## if playing the sample do nothing
         elif self.playProcess.poll() is None:
             pass
-        ## if not recording
+        ## Otherwise start recording
         else:
-            print("recording")
             ## turn on record LED
             self.LEDs["Record"].on()
             ## set record start time 
             self.recordStartTime = time.time()
             ## start recording
+            ## Using a process like this we can leave it running and still accept input
+            ## We can also check whether this process is still running using the poll method (see above)
             self.recordProcess = subprocess.Popen(["arecord", "/home/findlay/Sample.wav" ,"-f", "dat"])
 
-
     def stopRecord(self):
+        ## if the recording has been running for more than one second or the button has been pressed more than once
         if self.returnTimeDifference(self.recordStartTime) > 1 or self.recPressCount > 1:
+            ## kill the process (ending the recording)
             self.recordProcess.kill()
+            ## turn off the LED
             self.LEDs["Record"].off()
+            ## reset the record press count to 0
             self.recPressCount = 0
 
     def play(self):
+        ## If recording do nothing
         if self.recordProcess.poll() is None:
             pass
+        ## If playing do nothing ## TODO change to kill process with some logic
         elif self.playProcess.poll() is None:
             ## self.playProcess.kill()
             pass
+        ## Otherwise start a subprocess to play the sample
         else:
             self.playProcess = subprocess.Popen(["aplay", "/home/findlay/Sample.wav"])
 
     def buttonsOn(self):
+        ## Setup the button functions
         self.buttons["Record"].when_pressed = self.record
         self.buttons["Record"].when_released = self.stopRecord
         self.buttons["Play"].when_pressed = self.play
