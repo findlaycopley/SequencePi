@@ -86,6 +86,9 @@ class Sequencer:
             pass
         ## Otherwise start recording
         else:
+        elif self.playProcess.poll() is None:
+        ## if not recording
+        else:
             ## turn on record LED
             self.LEDs["Record"].on()
             ## set record start time 
@@ -94,10 +97,13 @@ class Sequencer:
             ## Using a process like this we can leave it running and still accept input
             ## We can also check whether this process is still running using the poll method (see above)
             self.recordProcess = subprocess.Popen(["arecord", "/home/findlay/Sample.wav" ,"-f", "dat"])
-
+    
     def stopRecord(self):
+        ## Avoid ghosting this requires a 0.1 second delay
+        if self.returnTimeDifference(self.recordStartTime) < 0.1:
+            pass
         ## if the recording has been running for more than one second or the button has been pressed more than once
-        if self.returnTimeDifference(self.recordStartTime) > 1 or self.recPressCount > 1:
+        elif self.returnTimeDifference(self.recordStartTime) > 1 or self.recPressCount > 1:
             ## kill the process (ending the recording)
             self.recordProcess.kill()
             ## turn off the LED
